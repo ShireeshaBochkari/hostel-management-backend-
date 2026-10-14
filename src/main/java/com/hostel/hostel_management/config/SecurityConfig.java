@@ -1,4 +1,3 @@
-
 package com.hostel.hostel_management.config;
 
 import java.util.Arrays;
@@ -100,10 +99,15 @@ public SecurityFilterChain securityFilterChain(
         .sessionManagement(session ->
             session.sessionCreationPolicy(
                 SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-            .requestMatchers("/error").permitAll()                   
-            .requestMatchers("/api/auth/**").permitAll()
+                            
+                    .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(
+                            jakarta.servlet.DispatcherType.ERROR
+                        ).permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/", "/error", "/favicon.ico").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+
 
             // Rooms - available and student's room
             .requestMatchers(HttpMethod.GET, "/api/rooms/available").authenticated()
