@@ -115,17 +115,21 @@ public class RoomService {
                                 "Room not found."));
 
         if (hosteller.getRoom() != null) {
-            throw new IllegalArgumentException(
-                    "This hosteller already has an assigned room.");
+            if (hosteller.getRoom().getId().equals(roomId)) {
+                throw new IllegalArgumentException(
+                        "This hosteller is already assigned to Room " + room.getRoomNumber() + ".");
+            }
+            return reassignHostellerToRoom(hostellerId, roomId);
         }
 
         if (room.getOccupied() >= room.getCapacity()) {
             throw new IllegalArgumentException(
-                    "This room is full.");
+                    "Room " + room.getRoomNumber() + " is full.");
         }
 
         hosteller.setRoom(room);
         room.setOccupied(room.getOccupied() + 1);
+        room.updateStatus();
 
         userRepository.save(hosteller);
         roomRepository.save(room);
@@ -152,9 +156,7 @@ public class RoomService {
         Room oldRoom = hosteller.getRoom();
 
         if (oldRoom == null) {
-            throw new IllegalArgumentException(
-                    "This hosteller does not have an assigned room. "
-                    + "Use normal assignment.");
+            return assignHostellerToRoom(hostellerId, newRoomId);
         }
 
         Room newRoom = roomRepository.findById(newRoomId)
@@ -164,16 +166,19 @@ public class RoomService {
 
         if (oldRoom.getId().equals(newRoom.getId())) {
             throw new IllegalArgumentException(
-                    "The hosteller is already assigned to this room.");
+                    "The hosteller is already assigned to Room " + newRoom.getRoomNumber() + ".");
         }
 
         if (newRoom.getOccupied() >= newRoom.getCapacity()) {
             throw new IllegalArgumentException(
-                    "The new room is full.");
+                    "The new room (Room " + newRoom.getRoomNumber() + ") is full.");
         }
 
-        oldRoom.setOccupied(oldRoom.getOccupied() - 1);
+        oldRoom.setOccupied(Math.max(0, oldRoom.getOccupied() - 1));
+        oldRoom.updateStatus();
+
         newRoom.setOccupied(newRoom.getOccupied() + 1);
+        newRoom.updateStatus();
 
         hosteller.setRoom(newRoom);
 
@@ -212,11 +217,33 @@ public class RoomService {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Room not found."));
 
-        if (room.getOccupied() > 0) {
-            throw new IllegalArgumentException(
-                    "Cannot delete a room that still has occupants.");
+        // Safely unassign all occupants/hostellers currently assigned to this room
+        List<User> occupants = userRepository.findByRoomId(id);
+        for (User occupant : occupants) {
+            occupant.setRoom(null);
+            userRepository.save(occupant);
+        }
+
+        if (room.getAmenities() != null) {
+            room.getAmenities().clear();
         }
 
         roomRepository.delete(room);
+    }
+
+    @Transactional
+    public User unassignHostellerFromRoom(Long hostellerId) {
+        User hosteller = userRepository.findById(hostellerId)
+                .orElseThrow(() -> new IllegalArgumentException("Hosteller not found."));
+
+        Room room = hosteller.getRoom();
+        if (room != null) {
+            room.setOccupied(Math.max(0, room.getOccupied() - 1));
+            room.updateStatus();
+            roomRepository.save(room);
+            hosteller.setRoom(null);
+            userRepository.save(hosteller);
+        }
+        return hosteller;
     }
 }

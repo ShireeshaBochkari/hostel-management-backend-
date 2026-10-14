@@ -66,12 +66,24 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public Map<String, Object> studentStats(User student) {
+        User current = userRepository.findById(student.getId()).orElse(student);
         Map<String, Object> stats = new HashMap<>();
-        stats.put("hasRoom", student.getRoom() != null);
-        stats.put("roomNumber", student.getRoom() == null ? "Not Assigned" : student.getRoom().getRoomNumber());
-        stats.put("payments", paymentRepository.findByHostellerId(student.getId()).size());
-        stats.put("complaints", complaintRepository.findByStudent_IdOrderByCreatedAtDesc(student.getId()).size());
-        stats.put("visitors", visitorRepository.findByStudent_IdOrderByCreatedAtDesc(student.getId()).size());
+        boolean hasRoom = current.getRoom() != null;
+        stats.put("hasRoom", hasRoom);
+        stats.put("roomNumber", hasRoom ? current.getRoom().getRoomNumber() : "Not Assigned");
+        if (hasRoom) {
+            stats.put("roomId", current.getRoom().getId());
+            stats.put("rentPerPerson", current.getRoom().getRentPerPerson());
+            stats.put("capacity", current.getRoom().getCapacity());
+            stats.put("occupied", current.getRoom().getOccupied());
+            stats.put("availableBeds", current.getRoom().getAvailableBeds());
+            stats.put("roomStatus", current.getRoom().getStatus());
+        } else {
+            stats.put("rentPerPerson", BigDecimal.ZERO);
+        }
+        stats.put("payments", paymentRepository.findByHostellerId(current.getId()).size());
+        stats.put("complaints", complaintRepository.findByStudent_IdOrderByCreatedAtDesc(current.getId()).size());
+        stats.put("visitors", visitorRepository.findByStudent_IdOrderByCreatedAtDesc(current.getId()).size());
         stats.put("notices", noticeRepository.count());
         return stats;
     }

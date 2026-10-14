@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.hostel.hostel_management.dto.RoomAssignmentRequest;
 import com.hostel.hostel_management.dto.RoomRequest;
 import com.hostel.hostel_management.dto.RoomResponse;
+import com.hostel.hostel_management.entity.Room;
 import com.hostel.hostel_management.entity.User;
 import com.hostel.hostel_management.service.RoomService;
 
@@ -67,23 +68,32 @@ public class RoomController {
 
         User hosteller = roomService.getHostellerByEmail(authentication.getName());
 
+        Map<String, Object> response = new java.util.LinkedHashMap<>();
         if (hosteller.getRoom() == null) {
-            return Map.of(
-                    "assigned", false,
-                    "message", "No room has been assigned yet.");
+            response.put("assigned", false);
+            response.put("message", "No room has been assigned yet.");
+            return response;
         }
 
-        return Map.of(
-                "assigned", true,
-                "hostellerId", hosteller.getId(),
-                "roomId", hosteller.getRoom().getId(),
-                "roomNumber", hosteller.getRoom().getRoomNumber(),
-                "capacity", hosteller.getRoom().getCapacity(),
-                "occupied", hosteller.getRoom().getOccupied(),
-                "availableBeds", hosteller.getRoom().getAvailableBeds(),
-                "rentPerPerson", hosteller.getRoom().getRentPerPerson(),
-                "status", hosteller.getRoom().getStatus()
-        );
+        Room room = hosteller.getRoom();
+        response.put("assigned", true);
+        response.put("hostellerId", hosteller.getId());
+        response.put("hostellerName", hosteller.getFullName());
+        response.put("roomId", room.getId());
+        response.put("roomNumber", room.getRoomNumber());
+        response.put("capacity", room.getCapacity());
+        response.put("occupied", room.getOccupied());
+        response.put("availableBeds", room.getAvailableBeds());
+        response.put("rentPerPerson", room.getRentPerPerson());
+        response.put("status", room.getStatus());
+        if (room.getAmenities() != null) {
+            response.put("amenities", room.getAmenities().stream()
+                    .map(com.hostel.hostel_management.entity.Amenity::getName)
+                    .toList());
+        } else {
+            response.put("amenities", java.util.List.of());
+        }
+        return response;
     }
 
     @PostMapping
@@ -123,13 +133,15 @@ public class RoomController {
                 request.getHostellerId(),
                 request.getRoomId());
 
-        return Map.of(
-                "message", "Hosteller assigned to room successfully.",
-                "hostellerId", hosteller.getId(),
-                "hostellerName", hosteller.getFullName(),
-                "roomId", hosteller.getRoom().getId(),
-                "roomNumber", hosteller.getRoom().getRoomNumber()
-        );
+        Map<String, Object> response = new java.util.LinkedHashMap<>();
+        response.put("message", "Hosteller assigned to room successfully.");
+        response.put("hostellerId", hosteller.getId());
+        response.put("hostellerName", hosteller.getFullName());
+        if (hosteller.getRoom() != null) {
+            response.put("roomId", hosteller.getRoom().getId());
+            response.put("roomNumber", hosteller.getRoom().getRoomNumber());
+        }
+        return response;
     }
 
     @PutMapping("/reassign/{hostellerId}/{newRoomId}")
@@ -139,12 +151,27 @@ public class RoomController {
             @PathVariable Long newRoomId) {
         User hosteller = roomService.reassignHostellerToRoom(hostellerId, newRoomId);
 
-        return Map.of(
-                "message", "Room changed successfully.",
-                "hostellerId", hosteller.getId(),
-                "hostellerName", hosteller.getFullName(),
-                "roomId", hosteller.getRoom().getId(),
-                "roomNumber", hosteller.getRoom().getRoomNumber()
-        );
+        Map<String, Object> response = new java.util.LinkedHashMap<>();
+        response.put("message", "Room changed successfully.");
+        response.put("hostellerId", hosteller.getId());
+        response.put("hostellerName", hosteller.getFullName());
+        if (hosteller.getRoom() != null) {
+            response.put("roomId", hosteller.getRoom().getId());
+            response.put("roomNumber", hosteller.getRoom().getRoomNumber());
+        }
+        return response;
+    }
+
+    @PutMapping("/unassign/{hostellerId}")
+    @PreAuthorize("hasAnyRole('WARDEN', 'ADMIN')")
+    public Map<String, Object> unassignHosteller(@PathVariable Long hostellerId) {
+        User hosteller = roomService.unassignHostellerFromRoom(hostellerId);
+
+        Map<String, Object> response = new java.util.LinkedHashMap<>();
+        response.put("message", "Hosteller unassigned from room successfully.");
+        response.put("hostellerId", hosteller.getId());
+        response.put("hostellerName", hosteller.getFullName());
+        response.put("roomNumber", "Not Assigned");
+        return response;
     }
 }

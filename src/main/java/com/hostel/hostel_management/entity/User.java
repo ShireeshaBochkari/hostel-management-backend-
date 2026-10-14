@@ -44,7 +44,7 @@ public class User {
     @Column(length = 80)
     private String course;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "room_id")
     private Room room;
 
@@ -52,7 +52,7 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    @jakarta.persistence.OneToOne(mappedBy = "user", cascade = jakarta.persistence.CascadeType.ALL, fetch = FetchType.LAZY)
+    @jakarta.persistence.OneToOne(mappedBy = "user", cascade = jakarta.persistence.CascadeType.ALL, fetch = FetchType.EAGER)
     private StudentProfile profile;
 
     @Column(nullable = false, updatable = false)

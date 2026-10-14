@@ -1,1 +1,3 @@
 com\hostel\hostel_management\HostelManagementApplicationTests.class
+com\hostel\hostel_management\RoomServiceTest.class
+com\hostel\hostel_management\ComplaintServiceTest.class

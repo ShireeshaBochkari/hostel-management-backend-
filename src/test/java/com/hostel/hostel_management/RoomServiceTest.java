@@ -93,4 +93,20 @@ class RoomServiceTest {
         assertEquals(1, room.getOccupied());
         assertEquals(room, student.getRoom());
     }
+
+    @Test
+    void testDeleteRoom_WithOccupants_UnassignsAndDeletes() {
+        Room room = new Room("101", 4, 1, new BigDecimal("5000"));
+        User student = new User();
+        student.setRoom(room);
+
+        when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
+        when(userRepository.findByRoomId(1L)).thenReturn(java.util.List.of(student));
+
+        roomService.deleteRoom(1L);
+
+        org.junit.jupiter.api.Assertions.assertNull(student.getRoom());
+        verify(userRepository).save(student);
+        verify(roomRepository).delete(room);
+    }
 }
