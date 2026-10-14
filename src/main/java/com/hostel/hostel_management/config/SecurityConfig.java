@@ -102,8 +102,8 @@ public SecurityFilterChain securityFilterChain(
                 SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            .requestMatchers("/error").permitAll()                   
             .requestMatchers("/api/auth/**").permitAll()
-            .requestMatchers("/error").permitAll()
 
             // Rooms - available and student's room
             .requestMatchers(HttpMethod.GET, "/api/rooms/available").authenticated()
